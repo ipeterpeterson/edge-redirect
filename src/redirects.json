@@ -1,0 +1,7 @@
+{
+  "http": {
+      "index.html": "https://google.com",
+      "path1.html": "https://aws.amazon.com",
+      "path2.html": "https://cloud.google.com"
+  }
+}
