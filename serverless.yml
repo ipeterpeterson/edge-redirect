@@ -1,0 +1,80 @@
+service: edge-redirect-function
+plugins:
+  - serverless-plugin-cloudfront-lambda-edge
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  region: ${self:custom.region}
+  stage: ${self:custom.stage}
+  # Note that Lambda@Edge does not actually support environment variables for lambda
+  # functions, but the plugin will strip the environment variables from any function
+  # that has edge configuration on it
+  environment:
+    SLS_SVC_NAME: ${self:service}
+    SLS_STAGE: ${self:custom.stage}
+
+custom:
+  defaultRegion: us-east-1
+  defaultEnvironmentGroup: dev
+  region: ${opt:region, self:custom.defaultRegion}
+  stage: ${opt:stage, env:USER}
+  objectPrefix: '${self:service}-${self:custom.stage}'
+
+package:
+  exclude:
+    - 'node_modules/**'
+
+functions:
+  RequestRewriter:
+    name: '${self:custom.objectPrefix}-viewer-request'
+    handler: src/handler.handler
+    memorySize: 128
+    timeout: 5
+    lambdaAtEdge:
+      distribution: 'WebsiteDistribution'
+      eventType: 'viewer-request'
+
+resources:
+  Resources:
+    WebsiteBucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: '${self:custom.objectPrefix}'
+        AccessControl: 'PublicRead'
+        WebsiteConfiguration:
+          IndexDocument: 'index.html'
+          ErrorDocument: 'error.html'
+    WebsiteDistribution:
+      Type: 'AWS::CloudFront::Distribution'
+      Properties:
+        DistributionConfig:
+          DefaultCacheBehavior:
+            TargetOriginId: 'WebsiteBucketOrigin'
+            ViewerProtocolPolicy: 'redirect-to-https'
+            DefaultTTL: 600 # ten minutes
+            MaxTTL: 600 # ten minutes
+            Compress: true
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: 'none'
+          DefaultRootObject: 'index.html'
+          Enabled: true
+          PriceClass: 'PriceClass_All'
+          HttpVersion: 'http2'
+          ViewerCertificate:
+            CloudFrontDefaultCertificate: true
+          Origins:
+            -
+              Id: 'WebsiteBucketOrigin'
+              DomainName: { 'Fn::GetAtt': [ 'WebsiteBucket', 'DomainName' ] }
+              S3OriginConfig: {}
+
+  Outputs:
+    CloudFrontEndpoint:
+      Value:
+        Fn::GetAtt: WebsiteDistribution.DomainName
+      Export:
+        Name: "CFDistrib::URL"
+      Description: Endpoint for CloudFront distribution
