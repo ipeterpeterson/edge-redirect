@@ -62,3 +62,6 @@ typings/
 
 # serverless build output
 .serverless
+
+# idea
+.idea/
