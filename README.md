@@ -1,5 +1,5 @@
 # edge-redirect
-A simple Lambda@Edge redirect function built using the Serverless Framework.
+A simple Lambda@Edge redirect function built using the Serverless Framework and Node JS.
 
 ### Instructions
 1. Clone the project
