@@ -5,7 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "install": "^0.12.1",
-    "npm": "^7.0.3",
+    "npm": "^8.19.2",
     "serverless": "^1.28.0",
     "serverless-plugin-cloudfront-lambda-edge": "^2.0.0"
   },
